@@ -203,8 +203,8 @@
       <h2>Твоя подборка</h2>
       <p id="sumtext">Листай истории и отмечай ♡ — здесь соберётся твой шорт-лист.</p>
       <div class="thumbs" id="thumbs"></div>
-      <button class="go" onclick="restart()">Смотреть заново</button>
-      <button class="back" onclick="restart()">В начало</button>
+      <button class="go" onclick="goSum()">Оформить букет</button>
+      <button class="back" onclick="restart()">Смотреть заново</button>
     </div>
   </div>
 
@@ -367,15 +367,20 @@ function buyHTML(){
     <div class="buyrow"><span>Букет</span><b>${rub(c.price)}</b></div>
     <div class="buyrow"><span>Доставка по Москве</span><b>~2 часа · бесплатно</b></div>
     <div class="delv">
-      <button class="delopt sel" onclick="selDeliv(this)">Знаю адрес — введу сам</button>
-      <button class="delopt" onclick="selDeliv(this)">Пусть укажет получатель (ссылка)</button>
+      <button class="delopt sel" data-gift="0" onclick="selDeliv(this)">Знаю адрес — введу сам</button>
+      <button class="delopt" data-gift="1" onclick="selDeliv(this)">Пусть укажет получатель (ссылка)</button>
     </div>
     <button class="buycta" onclick="orderDone()">Оформить · ${rub(c.price)}</button>
     <p class="fine">Оплата после подтверждения флористом · заказ исполняет Roza4U</p>`;
 }
 function selDeliv(el){ el.parentNode.querySelectorAll('.delopt').forEach(b=>b.classList.remove('sel')); el.classList.add('sel'); }
 function orderDone(){
-  sheetEl.innerHTML=`<div class="grip"></div><div class="done"><div class="okc">${svg(IC.check,'none','#fff')}</div><h3>Заказ принят</h3><p class="sub" style="text-align:center">Флорист Roza4U подтвердит и доставит примерно за 2 часа.<br><span style="opacity:.55">демо-прототип</span></p><button class="buycta" onclick="closeSheet()">Готово</button></div>`;
+  const gift = sheetEl.querySelector('.delopt.sel')?.dataset.gift==='1';
+  if(gift){
+    sheetEl.innerHTML=`<div class="grip"></div><div class="done"><div class="okc">${svg(IC.check,'none','#fff')}</div><h3>Ссылка готова</h3><p class="sub" style="text-align:center">Отправьте её получателю — он сам укажет адрес и время. Адрес вам не покажем.<br><span style="opacity:.55">демо-прототип</span></p><a class="buycta" style="display:block;text-align:center;text-decoration:none;box-sizing:border-box" href="recipient.html" target="_blank">Открыть страницу получателя</a><button class="buycta" style="background:rgba(255,255,255,.08);box-shadow:none;margin-top:10px" onclick="closeSheet()">Закрыть</button></div>`;
+  } else {
+    sheetEl.innerHTML=`<div class="grip"></div><div class="done"><div class="okc">${svg(IC.check,'none','#fff')}</div><h3>Заказ принят</h3><p class="sub" style="text-align:center">Флорист Roza4U подтвердит и доставит примерно за 2 часа.<br><span style="opacity:.55">демо-прототип</span></p><button class="buycta" onclick="closeSheet()">Готово</button></div>`;
+  }
 }
 function sheet(type){
   const b=B[cur];let h='';
@@ -403,14 +408,16 @@ function setFlower(k){st[cur].flower=k;sheet('flowers');}
 function toSummary(){
   paused=true;stage.classList.add('paused');
   const v=activePanel&&activePanel.querySelector('video');if(v)v.pause();
-  const liked=B.map((b,i)=>st[i]&&st[i].liked?b:null).filter(Boolean);
+  const liked=B.map((b,i)=>st[i]&&st[i].liked?{b,i}:null).filter(Boolean);
   const t=document.getElementById('thumbs');
   if(liked.length){
-    t.innerHTML=liked.slice(0,5).map(b=>`<img src="${b.photos.find(p=>p.type!=='video').src}">`).join('');
-    document.getElementById('sumtext').innerHTML=`Ты отметил <span class="cnt">${liked.length}</span> ${plural(liked.length)}. Соберём финальный букет и покажем похожие.`;
+    t.innerHTML=liked.slice(0,6).map(x=>`<img src="${x.b.photos.find(p=>p.type!=='video').src}" onclick="buyFromSummary(${x.i})">`).join('');
+    document.getElementById('sumtext').innerHTML=`Ты отметил <span class="cnt">${liked.length}</span> ${plural(liked.length)}. Нажми на любой — оформим за пару минут.`;
   }else{ t.innerHTML=''; document.getElementById('sumtext').textContent='Листай истории и отмечай ♡ — здесь соберётся твой шорт-лист.'; }
   summaryEl.classList.add('show');
 }
+function buyFromSummary(i){ cur=i; openSheet('buy'); }
+function goSum(){ const f=B.findIndex((b,i)=>st[i]&&st[i].liked); if(f>=0) buyFromSummary(f); else restart(); }
 const plural=n=>(n%10==1&&n%100!=11)?'букет':((n%10>=2&&n%10<=4&&(n%100<10||n%100>=20))?'букета':'букетов');
 function restart(){ transitioning=false; summaryEl.classList.remove('show'); cube.className='cube'; cube.innerHTML=''; cur=0; sub=0; paused=false; stage.classList.remove('paused'); const p=renderPanel(0,0); p.classList.add('front'); cube.appendChild(p); activePanel=p; wirePanel(p); }
 
