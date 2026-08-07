@@ -13,6 +13,7 @@
 <style>
   :root{
     --accent:#D24E76; --accent-soft:#E0759A;
+    --go:#12925A; --go-hi:#16A768;
     --sans:'Raleway',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
     --serif:'Lora',Georgia,'Times New Roman',serif;
     --safe-top:env(safe-area-inset-top,10px);
@@ -85,10 +86,35 @@
   .cap .now{font-size:22px;font-weight:700;letter-spacing:-.01em;}
   .cap .old{font-size:13px;opacity:.55;text-decoration:line-through;}
   .cap .off{font-size:10.5px;font-weight:700;color:#fff;background:var(--accent);padding:3px 7px;border-radius:7px;}
-  .order{position:absolute;right:16px;bottom:calc(var(--safe-bot) + 18px);z-index:6;
-    font-weight:700;font-size:14px;color:#fff;background:var(--accent);padding:13px 20px;border-radius:14px;
-    box-shadow:0 8px 24px -8px rgba(210,78,118,.75);transition:transform .15s;}
-  .order:active{transform:translateY(1px) scale(.97);}
+  .order{position:absolute;right:16px;bottom:calc(var(--safe-bot) + 22px);z-index:6;
+    font-weight:700;font-size:15px;color:#fff;background:var(--go);padding:14px 22px;border-radius:14px;
+    box-shadow:0 8px 24px -8px rgba(18,146,90,.85);transition:transform .15s,filter .15s;}
+  .order:active{transform:translateY(1px) scale(.97);filter:brightness(1.08);}
+  .cap .trust{display:flex;align-items:center;gap:6px;margin-top:9px;font-size:11px;font-weight:500;opacity:.82;text-shadow:0 1px 8px rgba(0,0,0,.7);}
+  .cap .trust svg{width:13px;height:13px;stroke:#7fe0ab;flex:0 0 auto;}
+  /* CTA-триггер на паузе последнего кадра */
+  .endcta{position:absolute;left:14px;right:14px;bottom:118px;z-index:9;max-width:492px;margin:0 auto;
+    background:var(--glass);backdrop-filter:blur(20px) saturate(1.2);color:#fff;border:1px solid rgba(255,255,255,.12);
+    border-radius:20px;padding:16px 16px 14px;box-shadow:0 18px 46px -14px rgba(0,0,0,.6);
+    transform:translateY(18px);opacity:0;pointer-events:none;transition:.34s;}
+  .endcta.show{transform:translateY(0);opacity:1;pointer-events:auto;}
+  .endcta p{font-size:14px;margin-bottom:12px;}
+  .endcta p b{font-family:var(--serif);font-weight:600;}
+  .endcta .row2{display:flex;gap:8px;}
+  .endcta .buy{flex:1;font-weight:800;font-size:15px;color:#fff;background:var(--go);padding:13px;border-radius:12px;box-shadow:0 8px 22px -10px rgba(18,146,90,.9);}
+  .endcta .skip{font-weight:600;font-size:14px;color:rgba(255,255,255,.65);padding:13px 14px;}
+  .buyrow{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.1);font-size:14px;}
+  .buyrow span{color:rgba(255,255,255,.7);} .buyrow b{font-weight:700;}
+  .delv{display:flex;flex-direction:column;gap:8px;margin:16px 0 4px;}
+  .delopt{text-align:left;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);border-radius:12px;padding:13px 15px;font-size:13.5px;font-weight:500;color:#fff;}
+  .delopt.sel{border-color:var(--go);background:rgba(18,146,90,.16);}
+  .buycta{margin-top:18px;width:100%;font-weight:800;font-size:16px;color:#fff;background:var(--go);padding:16px;border-radius:14px;box-shadow:0 8px 24px -10px rgba(18,146,90,.9);}
+  .buycta:active{filter:brightness(1.08);}
+  .fine{margin-top:12px;font-size:11.5px;color:rgba(255,255,255,.5);text-align:center;line-height:1.4;}
+  .done{text-align:center;padding:14px 6px 4px;}
+  .done .okc{width:64px;height:64px;border-radius:50%;background:var(--go);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
+  .done .okc svg{width:32px;height:32px;stroke:#fff;stroke-width:2.5;}
+  .done h3{margin-bottom:8px;}
 
   /* fixed chrome above cube */
   .topfixed{position:absolute;left:0;right:0;top:0;z-index:9;pointer-events:none;
@@ -168,6 +194,10 @@
       </div>
     </div>
     <div class="hintpaused">Пауза</div>
+    <div class="endcta" id="endcta">
+      <p><b>Понравился букет?</b> Оформим и доставим за ~2 часа.</p>
+      <div class="row2"><button class="buy" id="endbuy">Заказать</button><button class="skip" id="endskip">Листать дальше</button></div>
+    </div>
     <div class="summary" id="summary">
       <svg class="crown" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4 4 5-7 5 7 4-4-2 12H5L3 7z"/></svg>
       <h2>Твоя подборка</h2>
@@ -226,6 +256,7 @@ function renderPanel(i,s){
       <div class="name">${b.name}</div>${tags}
       <div class="descwrap"><span class="desc2">${b.desc}</span> <button class="more" data-sheet="about">подробнее</button></div>
       <div class="size sz"></div><div class="price pr"></div>
+      <div class="trust">${svg('<path d="M3 13V7a1 1 0 0 1 1-1h10v9M14 9h4l3 3v3h-2M5 17h9"/><circle cx="7.5" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/>','none','#7fe0ab')} Доставка по Москве за 2 часа · Roza4U</div>
     </div><button class="order" data-order>Заказать</button>`
     :`<div class="cap"><div class="name">${b.name}</div><div class="descwrap"><span class="desc2">${b.desc}</span></div></div>`;
   p.innerHTML=`<div class="photo">${mediaHTML(b.photos[s])}</div>
@@ -256,7 +287,7 @@ function wirePanel(p){
   z.addEventListener('pointercancel',()=>{clearTimeout(holdT);resume();},{passive:true});
   const hb=p.querySelector('[data-heart]'); if(hb) hb.addEventListener('click',()=>like(hb),{passive:true});
   p.querySelectorAll('[data-sheet]').forEach(b=>b.addEventListener('click',()=>openSheet(b.dataset.sheet),{passive:true}));
-  const ob=p.querySelector('[data-order]'); if(ob) ob.addEventListener('click',()=>{},{passive:true});
+  const ob=p.querySelector('[data-order]'); if(ob) ob.addEventListener('click',()=>openSheet('buy'),{passive:true});
   fillPrice(p,cur); startProg(p); playVid(p);
 }
 
@@ -294,21 +325,24 @@ function transitionTo(k,dir){
 }
 
 const IDLE_MS=15000; let idleTimer=null; // авто-переход к след. букету только по долгому простою (фидбэк Макса №7)
+const endctaEl=document.getElementById('endcta');
+function showEndCta(){ if(B[cur].sizes) endctaEl.classList.add('show'); }
+function hideEndCta(){ endctaEl.classList.remove('show'); }
 function clearIdle(){ if(idleTimer){clearTimeout(idleTimer);idleTimer=null;} }
-function bouquetJump(delta){ if(transitioning)return; clearIdle(); const k=(cur+delta+B.length)%B.length; transitionTo(k, delta>0?'next':'prev'); }
+function bouquetJump(delta){ if(transitioning)return; clearIdle(); hideEndCta(); const k=(cur+delta+B.length)%B.length; transitionTo(k, delta>0?'next':'prev'); }
 /* ручной тап-край — переходит к соседнему букету; авто-прогресс — нет */
-function nextSub(){ if(transitioning)return; clearIdle(); if(sub<B[cur].photos.length-1) stepWithin(sub+1); else bouquetJump(1); }
-function prevSub(){ if(transitioning)return; clearIdle(); if(sub>0) stepWithin(sub-1); else bouquetJump(-1); }
-/* авто-прогресс: внутри букета листает фото; на последнем — НЕ прыгает, встаёт на паузу, авто-переход лишь после простоя */
+function nextSub(){ if(transitioning)return; clearIdle(); hideEndCta(); if(sub<B[cur].photos.length-1) stepWithin(sub+1); else bouquetJump(1); }
+function prevSub(){ if(transitioning)return; clearIdle(); hideEndCta(); if(sub>0) stepWithin(sub-1); else bouquetJump(-1); }
+/* авто-прогресс: внутри букета листает фото; на последнем — НЕ прыгает, встаёт на паузу + показывает CTA, авто-переход лишь после долгого простоя */
 function autoAdvance(){ if(transitioning)return; if(sub<B[cur].photos.length-1) stepWithin(sub+1); else pauseAtEnd(); }
-function pauseAtEnd(){ clearIdle(); idleTimer=setTimeout(()=>{ if(!sheetOpen&&!transitioning) bouquetJump(1); }, IDLE_MS); }
+function pauseAtEnd(){ clearIdle(); showEndCta(); idleTimer=setTimeout(()=>{ if(!sheetOpen&&!transitioning){ hideEndCta(); bouquetJump(1); } }, IDLE_MS); }
 
 function pause(){ paused=true; stage.classList.add('paused'); const v=activePanel&&activePanel.querySelector('video'); if(v)v.pause(); }
 function resume(){ if(!paused)return; paused=false; stage.classList.remove('paused'); if(activePanel)playVid(activePanel); }
 
 /* жесты: тап-половины + свайпы + hold-пауза */
 let holdT=null, held=false, gx=0, gy=0, gMoved=false;
-function onDown(e){ clearIdle(); gx=e.clientX; gy=e.clientY; gMoved=false; held=false; holdT=setTimeout(()=>{ if(!gMoved){ held=true; pause(); } },180); }
+function onDown(e){ clearIdle(); hideEndCta(); gx=e.clientX; gy=e.clientY; gMoved=false; held=false; holdT=setTimeout(()=>{ if(!gMoved){ held=true; pause(); } },180); }
 function onMove(e){ if(Math.abs(e.clientX-gx)>10||Math.abs(e.clientY-gy)>10){ gMoved=true; clearTimeout(holdT); } }
 function onUp(e){ clearTimeout(holdT); if(sheetOpen)return; if(held){ resume(); return; }
   const dx=e.clientX-gx, dy=e.clientY-gy;
@@ -326,8 +360,26 @@ function like(el){
 /* sheets */
 const sheetEl=document.getElementById('sheet'),scrim=document.getElementById('scrim');
 function openSheet(type){ sheetOpen=true; pause(); sheet(type); }
+function buyHTML(){
+  const b=B[cur], c=b.sizes[st[cur].size];
+  return `<div class="grip"></div><h3>Оформить заказ</h3>
+    <p class="sub">${b.name} · ${c.n} роз · ${c.cm} см</p>
+    <div class="buyrow"><span>Букет</span><b>${rub(c.price)}</b></div>
+    <div class="buyrow"><span>Доставка по Москве</span><b>~2 часа · бесплатно</b></div>
+    <div class="delv">
+      <button class="delopt sel" onclick="selDeliv(this)">Знаю адрес — введу сам</button>
+      <button class="delopt" onclick="selDeliv(this)">Пусть укажет получатель (ссылка)</button>
+    </div>
+    <button class="buycta" onclick="orderDone()">Оформить · ${rub(c.price)}</button>
+    <p class="fine">Оплата после подтверждения флористом · заказ исполняет Roza4U</p>`;
+}
+function selDeliv(el){ el.parentNode.querySelectorAll('.delopt').forEach(b=>b.classList.remove('sel')); el.classList.add('sel'); }
+function orderDone(){
+  sheetEl.innerHTML=`<div class="grip"></div><div class="done"><div class="okc">${svg(IC.check,'none','#fff')}</div><h3>Заказ принят</h3><p class="sub" style="text-align:center">Флорист Roza4U подтвердит и доставит примерно за 2 часа.<br><span style="opacity:.55">демо-прототип</span></p><button class="buycta" onclick="closeSheet()">Готово</button></div>`;
+}
 function sheet(type){
   const b=B[cur];let h='';
+  if(type==='buy'){ sheetEl.innerHTML=buyHTML();sheetEl.classList.add('show');scrim.classList.add('show'); return; }
   if(type==='size'){
     h=`<div class="grip"></div><h3>Размер букета</h3><p class="sub">Честный размер, без «эконом/премиум». Число — предмет гордости.</p><div class="sizes">`+
       b.sizes.map((c,k)=>`<div class="sizeopt ${k===st[cur].size?'sel':''}" onclick="setSize(${k})"><div class="big">${c.n} <span>роз · ${c.cm} см</span></div><div class="row"><div class="p">${rub(c.price)}<small>${rub(c.old)}</small></div><div class="tick">${svg(IC.check,'none','#fff')}</div></div></div>`).join('')+`</div>`;
@@ -365,6 +417,8 @@ function restart(){ transitioning=false; summaryEl.classList.remove('show'); cub
 document.addEventListener('visibilitychange',()=>{document.hidden?pause():(!sheetOpen&&resume())});
 
 /* init */
+document.getElementById('endbuy').addEventListener('click',()=>{hideEndCta();openSheet('buy');},{passive:true});
+document.getElementById('endskip').addEventListener('click',()=>{hideEndCta();bouquetJump(1);},{passive:true});
 (function(){ const p=renderPanel(0,0); p.classList.add('front'); cube.appendChild(p); activePanel=p; wirePanel(p); })();
 </script>
 </body>

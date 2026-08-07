@@ -14,6 +14,7 @@
 <style>
   :root{
     --accent:#D24E76; --accent-soft:#E0759A;
+    --go:#12925A; --go-hi:#16A768;
     --ink:#1C1917; --ink-2:#44403C; --paper:#FFFFFF;
     --sans:'Raleway',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
     --serif:'Lora',Georgia,'Times New Roman',serif;
@@ -94,10 +95,12 @@
   .cap .now{font-size:22px;font-weight:700;letter-spacing:-.01em;}
   .cap .old{font-size:13px;opacity:.55;text-decoration:line-through;}
   .cap .off{font-size:10.5px;font-weight:700;color:#fff;background:var(--accent);padding:3px 7px;border-radius:7px;letter-spacing:.02em;}
-  .order{position:absolute;right:16px;bottom:calc(var(--safe-bot) + 18px);z-index:6;
-    font-weight:700;font-size:14px;color:#fff;background:var(--accent);padding:13px 20px;border-radius:14px;
-    box-shadow:0 8px 24px -8px rgba(210,78,118,.75);transition:transform .15s,filter .15s;}
-  .order:active{transform:translateY(1px) scale(.97);filter:brightness(1.05);}
+  .order{position:absolute;right:16px;bottom:calc(var(--safe-bot) + 22px);z-index:6;
+    font-weight:700;font-size:15px;color:#fff;background:var(--go);padding:14px 22px;border-radius:14px;
+    box-shadow:0 8px 24px -8px rgba(18,146,90,.85);transition:transform .15s,filter .15s;}
+  .order:active{transform:translateY(1px) scale(.97);filter:brightness(1.08);}
+  .cap .trust{display:flex;align-items:center;gap:6px;margin-top:9px;font-size:11px;font-weight:500;opacity:.82;text-shadow:0 1px 8px rgba(0,0,0,.7);}
+  .cap .trust svg{width:13px;height:13px;stroke:#7fe0ab;flex:0 0 auto;}
 
   /* coach */
   .coach{position:absolute;left:50%;bottom:34%;transform:translateX(-50%);z-index:8;
@@ -155,6 +158,19 @@
   .occ-title{font-size:12px;color:rgba(255,255,255,.55);margin-bottom:10px;}
   .chips2{display:flex;flex-wrap:wrap;gap:8px;}
   .chips2 span{border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.04);border-radius:999px;padding:8px 13px;font-size:13px;font-weight:500;}
+  .buyrow{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.1);font-size:14px;}
+  .buyrow span{color:rgba(255,255,255,.7);}
+  .buyrow b{font-weight:700;}
+  .delv{display:flex;flex-direction:column;gap:8px;margin:16px 0 4px;}
+  .delopt{text-align:left;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);border-radius:12px;padding:13px 15px;font-size:13.5px;font-weight:500;color:#fff;}
+  .delopt.sel{border-color:var(--go);background:rgba(18,146,90,.16);}
+  .buycta{margin-top:18px;width:100%;font-weight:800;font-size:16px;color:#fff;background:var(--go);padding:16px;border-radius:14px;box-shadow:0 8px 24px -10px rgba(18,146,90,.9);}
+  .buycta:active{filter:brightness(1.08);}
+  .fine{margin-top:12px;font-size:11.5px;color:rgba(255,255,255,.5);text-align:center;line-height:1.4;}
+  .done{text-align:center;padding:14px 6px 4px;}
+  .done .okc{width:64px;height:64px;border-radius:50%;background:var(--go);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
+  .done .okc svg{width:32px;height:32px;stroke:#fff;stroke-width:2.5;}
+  .done h3{margin-bottom:8px;}
 
   .nudge{position:fixed;left:14px;right:14px;bottom:120px;z-index:9;max-width:492px;margin:0 auto;
     background:var(--glass);backdrop-filter:blur(20px) saturate(1.2);color:#fff;border:1px solid rgba(255,255,255,.1);
@@ -263,8 +279,9 @@ function build(){
         <div class="descwrap"><span class="desc2">${b.desc}</span> <button class="more" onclick="sheet(${i},'about')">подробнее</button></div>
         <div class="size" id="sz${i}"></div>
         <div class="price" id="pr${i}"></div>
+        <div class="trust">${svg('<path d="M3 13V7a1 1 0 0 1 1-1h10v9M14 9h4l3 3v3h-2M5 17h9"/><circle cx="7.5" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/>','none','#7fe0ab')} Доставка по Москве за 2 часа · исполняет Roza4U</div>
       </div>
-      <button class="order" onclick="order(${i})">Заказать</button>`;
+      <button class="order" onclick="sheet(${i},'buy')">Заказать</button>`;
     s.innerHTML=`
       <div class="photos" data-photos>${photos}</div>
       <div class="ov">
@@ -339,8 +356,26 @@ const plural=n=>(n%10==1&&n%100!=11)?'букет':((n%10>=2&&n%10<=4&&(n%100<10|
 
 /* sheets */
 const sheetEl=document.getElementById('sheet'),scrim=document.getElementById('scrim');
+function buyHTML(i){
+  const b=B[i], c=b.sizes[st[i].size];
+  return `<div class="grip"></div><h3>Оформить заказ</h3>
+    <p class="sub">${b.name} · ${c.n} роз · ${c.cm} см</p>
+    <div class="buyrow"><span>Букет</span><b>${rub(c.price)}</b></div>
+    <div class="buyrow"><span>Доставка по Москве</span><b>~2 часа · бесплатно</b></div>
+    <div class="delv">
+      <button class="delopt sel" onclick="selDeliv(this)">Знаю адрес — введу сам</button>
+      <button class="delopt" onclick="selDeliv(this)">Пусть укажет получатель (ссылка)</button>
+    </div>
+    <button class="buycta" onclick="orderDone()">Оформить · ${rub(c.price)}</button>
+    <p class="fine">Оплата после подтверждения флористом · заказ исполняет Roza4U</p>`;
+}
+function selDeliv(el){ el.parentNode.querySelectorAll('.delopt').forEach(b=>b.classList.remove('sel')); el.classList.add('sel'); }
+function orderDone(){
+  sheetEl.innerHTML=`<div class="grip"></div><div class="done"><div class="okc">${svg(IC.check,'none','#fff')}</div><h3>Заказ принят</h3><p class="sub" style="text-align:center">Флорист Roza4U подтвердит и доставит примерно за 2 часа.<br><span style="opacity:.55">демо-прототип</span></p><button class="buycta" onclick="closeSheet()">Готово</button></div>`;
+}
 function sheet(i,type){
   const b=B[i];let h='';
+  if(type==='buy'){ sheetEl.innerHTML=buyHTML(i);sheetEl.classList.add('show');scrim.classList.add('show'); return; }
   if(type==='size'){
     h=`<div class="grip"></div><h3>Размер букета</h3><p class="sub">Честный размер, без «эконом/премиум». Число — предмет гордости.</p><div class="sizes">`+
       b.sizes.map((c,k)=>`<div class="sizeopt ${k===st[i].size?'sel':''}" onclick="setSize(${i},${k})">
