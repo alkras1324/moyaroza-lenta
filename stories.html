@@ -230,7 +230,7 @@ function renderPanel(i,s){
     :`<div class="cap"><div class="name">${b.name}</div><div class="descwrap"><span class="desc2">${b.desc}</span></div></div>`;
   p.innerHTML=`<div class="photo">${mediaHTML(b.photos[s])}</div>
     <div class="dark"></div>
-    <div class="zones"><div class="z zl"></div><div class="z zr"></div></div>
+    <div class="zones"></div>
     <div class="prog">${progHTML(i,s)}</div>${rail}${cap}`;
   return p;
 }
@@ -249,10 +249,11 @@ function startProg(p){
     bar.addEventListener('animationend',()=>{ if(p===activePanel&&!transitioning) nextSub(); },{once:true}); }
 }
 function wirePanel(p){
-  p.querySelector('.zl').addEventListener('pointerdown',down,{passive:true});
-  p.querySelector('.zr').addEventListener('pointerdown',down,{passive:true});
-  p.querySelector('.zl').addEventListener('pointerup',()=>up('l'),{passive:true});
-  p.querySelector('.zr').addEventListener('pointerup',()=>up('r'),{passive:true});
+  const z=p.querySelector('.zones');
+  z.addEventListener('pointerdown',onDown,{passive:true});
+  z.addEventListener('pointermove',onMove,{passive:true});
+  z.addEventListener('pointerup',onUp,{passive:true});
+  z.addEventListener('pointercancel',()=>{clearTimeout(holdT);resume();},{passive:true});
   const hb=p.querySelector('[data-heart]'); if(hb) hb.addEventListener('click',()=>like(hb),{passive:true});
   p.querySelectorAll('[data-sheet]').forEach(b=>b.addEventListener('click',()=>openSheet(b.dataset.sheet),{passive:true}));
   const ob=p.querySelector('[data-order]'); if(ob) ob.addEventListener('click',()=>{},{passive:true});
@@ -292,16 +293,23 @@ function transitionTo(k,dir){
   setTimeout(finish,640);
 }
 
-function nextSub(){ if(transitioning)return; if(sub<B[cur].photos.length-1) stepWithin(sub+1); else transitionTo(cur+1,'next'); }
-function prevSub(){ if(transitioning)return; if(sub>0) stepWithin(sub-1); else transitionTo(cur-1,'prev'); }
+function bouquetJump(delta){ if(transitioning)return; const k=(cur+delta+B.length)%B.length; transitionTo(k, delta>0?'next':'prev'); }
+function nextSub(){ if(transitioning)return; if(sub<B[cur].photos.length-1) stepWithin(sub+1); else bouquetJump(1); }
+function prevSub(){ if(transitioning)return; if(sub>0) stepWithin(sub-1); else bouquetJump(-1); }
 
 function pause(){ paused=true; stage.classList.add('paused'); const v=activePanel&&activePanel.querySelector('video'); if(v)v.pause(); }
 function resume(){ if(!paused)return; paused=false; stage.classList.remove('paused'); if(activePanel)playVid(activePanel); }
 
-/* tap zones + hold to pause */
-let holdT=null, held=false;
-function down(){ held=false; holdT=setTimeout(()=>{held=true;pause();},180); }
-function up(side){ clearTimeout(holdT); if(sheetOpen)return; if(held){resume();return;} side==='l'?prevSub():nextSub(); }
+/* жесты: тап-половины + свайпы + hold-пауза */
+let holdT=null, held=false, gx=0, gy=0, gMoved=false;
+function onDown(e){ gx=e.clientX; gy=e.clientY; gMoved=false; held=false; holdT=setTimeout(()=>{ if(!gMoved){ held=true; pause(); } },180); }
+function onMove(e){ if(Math.abs(e.clientX-gx)>10||Math.abs(e.clientY-gy)>10){ gMoved=true; clearTimeout(holdT); } }
+function onUp(e){ clearTimeout(holdT); if(sheetOpen)return; if(held){ resume(); return; }
+  const dx=e.clientX-gx, dy=e.clientY-gy;
+  if(Math.abs(dx)>45 && Math.abs(dx)>Math.abs(dy)*1.2){ dx<0?bouquetJump(1):bouquetJump(-1); return; } // свайп влево=вперёд, вправо=назад
+  const w=window.innerWidth||document.documentElement.clientWidth;
+  (e.clientX < w/2) ? prevSub() : nextSub(); // тап: левая половина=назад по фото, правая=вперёд
+}
 
 function like(el){
   const s=st[cur];s.liked=!s.liked;el.classList.toggle('on',s.liked);
