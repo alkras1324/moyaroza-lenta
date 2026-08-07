@@ -26,22 +26,21 @@
   button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
   @media (prefers-reduced-motion:reduce){.seg i{animation:none!important;}.panel.anim{transition:none!important;}}
 
-  .stage{position:absolute;inset:0;overflow:hidden;background:#0c0a09;perspective:1400px;}
-  .deck{position:absolute;inset:0;transform-style:preserve-3d;}
+  .stage{position:absolute;inset:0;overflow:hidden;background:#0c0a09;}
+  .deck{position:absolute;inset:0;perspective:1600px;perspective-origin:50% 50%;}
+  /* настоящий 3D-куб: грани на общей оси */
+  .cube{position:absolute;inset:0;transform-style:preserve-3d;transform:translateZ(-50vw);}
+  .cube.anim{transition:transform .52s cubic-bezier(.42,0,.28,1);}
+  .cube.to-next{transform:translateZ(-50vw) rotateY(-90deg);}
+  .cube.to-prev{transform:translateZ(-50vw) rotateY(90deg);}
 
-  /* story panel + 3D cube transition */
   .panel{position:absolute;inset:0;overflow:hidden;background:#0c0a09;backface-visibility:hidden;-webkit-backface-visibility:hidden;}
-  .panel.anim{transition:transform .5s cubic-bezier(.42,0,.25,1);}
-  .panel.enter-next{transform-origin:0 50%;transform:rotateY(90deg);}
-  .panel.enter-prev{transform-origin:100% 50%;transform:rotateY(-90deg);}
-  .panel.in{transform:rotateY(0);}
-  .panel.leave-next{transform-origin:100% 50%;transform:rotateY(-90deg);}
-  .panel.leave-prev{transform-origin:0 50%;transform:rotateY(90deg);}
+  .panel.front{transform:rotateY(0deg) translateZ(50vw);}
+  .panel.right{transform:rotateY(90deg) translateZ(50vw);}
+  .panel.left{transform:rotateY(-90deg) translateZ(50vw);}
   .panel.freeze .seg.run i{animation-play-state:paused;}
   .panel .dark{position:absolute;inset:0;z-index:8;background:#000;opacity:0;transition:opacity .5s;pointer-events:none;}
-  .panel.leave-next .dark,.panel.leave-prev .dark{opacity:.55;}
-  .panel.enter-next .dark,.panel.enter-prev .dark{opacity:.55;}
-  .panel.in .dark{opacity:0;}
+  .panel.right .dark,.panel.left .dark{opacity:.5;}
 
   .photo{position:absolute;inset:0;z-index:0;}
   .photo .bg{position:absolute;inset:0;overflow:hidden;}
@@ -160,7 +159,7 @@
 </head>
 <body>
   <div class="stage" id="stage">
-    <div class="deck" id="deck"></div>
+    <div class="deck" id="deck"><div class="cube" id="cube"></div></div>
     <div class="topfixed">
       <div class="brand">Моя<b>Роза</b></div>
       <div class="topr">
@@ -202,7 +201,7 @@ const IC={
 };
 const svg=(p,f='none',s='currentColor')=>`<svg viewBox="0 0 24 24" fill="${f}" stroke="${s}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 
-const deck=document.getElementById('deck'), stage=document.getElementById('stage'), summaryEl=document.getElementById('summary');
+const deck=document.getElementById('deck'), cube=document.getElementById('cube'), stage=document.getElementById('stage'), summaryEl=document.getElementById('summary');
 let cur=0, sub=0, paused=false, transitioning=false, activePanel=null, likes=0, sheetOpen=false;
 
 function mediaHTML(ph){
@@ -275,20 +274,21 @@ function transitionTo(k,dir){
   const op=activePanel;
   if(op) op.classList.add('freeze');
   cur=k; sub=0; paused=false; stage.classList.remove('paused');
+  // новая грань куба: справа при "вперёд", слева при "назад"
   const np=renderPanel(k,0);
-  np.classList.add(dir==='next'?'enter-next':'enter-prev');
-  deck.appendChild(np);
+  np.classList.add(dir==='next'?'right':'left');
+  cube.appendChild(np);
   playVid(np);
-  void np.offsetWidth; // reflow: фиксируем стартовый rotateY(90/-90)
+  void cube.offsetWidth; // reflow
   let done=false;
   const finish=()=>{ if(done)return; done=true; transitioning=false;
+    cube.classList.remove('anim','to-next','to-prev');
     if(op&&op.parentNode) op.remove();
-    np.classList.remove('anim','enter-next','enter-prev','in','freeze');
+    np.classList.remove('right','left','freeze'); np.classList.add('front');
     activePanel=np; wirePanel(np);
   };
-  if(op){ op.classList.add('anim',dir==='next'?'leave-next':'leave-prev'); }
-  np.classList.add('anim','in');
-  np.addEventListener('transitionend',finish,{once:true});
+  cube.classList.add('anim', dir==='next'?'to-next':'to-prev');
+  cube.addEventListener('transitionend',finish,{once:true});
   setTimeout(finish,640);
 }
 
@@ -346,12 +346,12 @@ function toSummary(){
   summaryEl.classList.add('show');
 }
 const plural=n=>(n%10==1&&n%100!=11)?'букет':((n%10>=2&&n%10<=4&&(n%100<10||n%100>=20))?'букета':'букетов');
-function restart(){ transitioning=false; summaryEl.classList.remove('show'); deck.innerHTML=''; cur=0; sub=0; paused=false; stage.classList.remove('paused'); const p=renderPanel(0,0); deck.appendChild(p); activePanel=p; wirePanel(p); }
+function restart(){ transitioning=false; summaryEl.classList.remove('show'); cube.className='cube'; cube.innerHTML=''; cur=0; sub=0; paused=false; stage.classList.remove('paused'); const p=renderPanel(0,0); p.classList.add('front'); cube.appendChild(p); activePanel=p; wirePanel(p); }
 
 document.addEventListener('visibilitychange',()=>{document.hidden?pause():(!sheetOpen&&resume())});
 
 /* init */
-(function(){ const p=renderPanel(0,0); deck.appendChild(p); activePanel=p; wirePanel(p); })();
+(function(){ const p=renderPanel(0,0); p.classList.add('front'); cube.appendChild(p); activePanel=p; wirePanel(p); })();
 </script>
 </body>
 </html>
