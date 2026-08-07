@@ -149,6 +149,15 @@
   .xclose svg{width:16px;height:16px;stroke:#fff;stroke-width:2.2;}
   .hintpaused{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9;background:rgba(20,18,16,.6);backdrop-filter:blur(8px);padding:8px 14px;border-radius:999px;font-size:12.5px;opacity:0;transition:opacity .2s;pointer-events:none;border:1px solid rgba(255,255,255,.14);}
   .stage.paused .hintpaused{opacity:1;}
+  .railhint{position:absolute;right:64px;top:50%;transform:translateY(-50%) translateX(10px);z-index:8;max-width:170px;
+    background:var(--glass);backdrop-filter:blur(18px) saturate(1.3);border:1px solid rgba(255,255,255,.18);border-radius:14px;
+    padding:10px 12px;font-size:12.5px;line-height:1.35;color:#fff;box-shadow:0 12px 30px -10px rgba(0,0,0,.6);
+    opacity:0;pointer-events:none;transition:.32s;}
+  .railhint.show{opacity:1;transform:translateY(-50%) translateX(0);}
+  .railhint::after{content:'';position:absolute;right:-6px;top:50%;transform:translateY(-50%) rotate(45deg);width:12px;height:12px;
+    background:var(--glass);border-right:1px solid rgba(255,255,255,.18);border-top:1px solid rgba(255,255,255,.18);}
+  .rail button.hintpulse{animation:railpulse 1.5s ease-in-out 3;}
+  @keyframes railpulse{0%,100%{box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 0 0 0 rgba(255,255,255,0)}50%{box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 0 0 7px rgba(255,255,255,.22)}}
 
   /* sheets */
   .scrim{position:fixed;inset:0;z-index:20;background:rgba(12,10,9,.5);opacity:0;pointer-events:none;transition:opacity .28s;}
@@ -215,6 +224,7 @@
       </div>
     </div>
     <div class="hintpaused">Пауза</div>
+    <div class="railhint" id="railhint">Размер, цвет и состав — здесь</div>
     <div class="summary" id="summary">
       <svg class="crown" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4 4 5-7 5 7 4-4-2 12H5L3 7z"/></svg>
       <h2>Твоя подборка</h2>
@@ -250,6 +260,11 @@ const svg=(p,f='none',s='currentColor')=>`<svg viewBox="0 0 24 24" fill="${f}" s
 
 const deck=document.getElementById('deck'), cube=document.getElementById('cube'), progEl=document.getElementById('prog'), stage=document.getElementById('stage'), summaryEl=document.getElementById('summary');
 let cur=0, sub=0, paused=false, transitioning=false, activePanel=null, likes=0, sheetOpen=false;
+let openedControl=false, views=0, hintShown=false, railPulsed=false;
+const railhintEl=document.getElementById('railhint');
+function showRailHint(){ if(hintShown||!B[cur].sizes||sheetOpen)return; hintShown=true; railhintEl.classList.add('show'); setTimeout(hideRailHint,4500); }
+function hideRailHint(){ railhintEl.classList.remove('show'); }
+function pulseRail(){ if(railPulsed||openedControl)return; railPulsed=true; const b=activePanel&&activePanel.querySelector('.rail button:nth-child(2)'); if(b)b.classList.add('hintpulse'); }
 
 function mediaHTML(ph){
   const one=(cls)=> ph.type==='video'
@@ -308,6 +323,8 @@ function wirePanel(p){
   const mb=p.querySelector('[data-more]'); if(mb) mb.addEventListener('click',()=>toggleDesc(p),{passive:true});
   const ob=p.querySelector('[data-order]'); if(ob) ob.addEventListener('click',()=>openSheet('buy'),{passive:true});
   fillPrice(p,cur); buildProg(); playVid(p);
+  if(B[cur].sizes && !hintShown) setTimeout(showRailHint,1400);
+  if(views>=4 && !openedControl && !railPulsed) setTimeout(pulseRail,700);
 }
 
 function stepWithin(newSub){
@@ -347,7 +364,7 @@ const IDLE_MS=15000; let idleTimer=null; // авто-переход к след.
 function showEndCta(){ const b=activePanel&&activePanel.querySelector('.order'); if(b)b.classList.add('pulse'); }
 function hideEndCta(){ document.querySelectorAll('.order.pulse').forEach(b=>b.classList.remove('pulse')); }
 function clearIdle(){ if(idleTimer){clearTimeout(idleTimer);idleTimer=null;} }
-function bouquetJump(delta){ if(transitioning)return; clearIdle(); hideEndCta(); const k=(cur+delta+B.length)%B.length; transitionTo(k, delta>0?'next':'prev'); }
+function bouquetJump(delta){ if(transitioning)return; clearIdle(); hideEndCta(); views++; const k=(cur+delta+B.length)%B.length; transitionTo(k, delta>0?'next':'prev'); }
 /* ручной тап-край — переходит к соседнему букету; авто-прогресс — нет */
 function nextSub(){ if(transitioning)return; clearIdle(); hideEndCta(); if(sub<B[cur].photos.length-1) stepWithin(sub+1); else bouquetJump(1); }
 function prevSub(){ if(transitioning)return; clearIdle(); hideEndCta(); if(sub>0) stepWithin(sub-1); else bouquetJump(-1); }
@@ -377,7 +394,7 @@ if(!REDUCED) window.addEventListener('mousemove',e=>{ applyParallax((e.clientX/i
 
 /* жесты: тап-половины + свайпы + hold-пауза */
 let holdT=null, held=false, gx=0, gy=0, gMoved=false;
-function onDown(e){ enableParallax(); clearIdle(); hideEndCta(); gx=e.clientX; gy=e.clientY; gMoved=false; held=false; holdT=setTimeout(()=>{ if(!gMoved){ held=true; pause(); } },180); }
+function onDown(e){ enableParallax(); clearIdle(); hideEndCta(); hideRailHint(); gx=e.clientX; gy=e.clientY; gMoved=false; held=false; holdT=setTimeout(()=>{ if(!gMoved){ held=true; pause(); } },180); }
 function onMove(e){ if(Math.abs(e.clientX-gx)>10||Math.abs(e.clientY-gy)>10){ gMoved=true; clearTimeout(holdT); } }
 function onUp(e){ clearTimeout(holdT); if(sheetOpen)return; if(held){ resume(); return; }
   const dx=e.clientX-gx, dy=e.clientY-gy;
@@ -394,7 +411,7 @@ function like(el){
 
 /* sheets */
 const sheetEl=document.getElementById('sheet'),scrim=document.getElementById('scrim');
-function openSheet(type){ sheetOpen=true; pause(); sheet(type); }
+function openSheet(type){ sheetOpen=true; if(type==='size'||type==='flowers'||type==='compose')openedControl=true; hideRailHint(); pause(); sheet(type); }
 function buyHTML(){
   const b=B[cur], c=b.sizes[st[cur].size];
   return `<div class="grip"></div><h3>Оформить заказ</h3>
