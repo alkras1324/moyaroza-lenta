@@ -60,14 +60,15 @@
   .dots i{width:16px;height:3px;border-radius:2px;background:rgba(255,255,255,.32);transition:background .2s;}
   .dots i.on{background:#fff;}
 
-  .rail{position:absolute;right:12px;top:50%;transform:translateY(-46%);display:flex;flex-direction:column;gap:12px;align-items:center;}
-  .rail button{width:50px;height:50px;border-radius:15px;border:1px solid rgba(255,255,255,.14);
-    background:rgba(20,18,16,.32);backdrop-filter:blur(10px);color:#fff;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;gap:3px;font-size:9.5px;font-weight:500;transition:transform .15s;}
-  .rail button:active{transform:scale(.9);}
-  .rail button svg{width:20px;height:20px;}
-  .rail .heart{background:rgba(20,18,16,.32);}
-  .rail .heart svg{width:24px;height:24px;fill:none;stroke:#fff;stroke-width:1.9;}
+  .rail{position:absolute;right:10px;top:50%;transform:translateY(-46%);display:flex;flex-direction:column;gap:10px;align-items:center;}
+  .rail button{width:44px;height:44px;border-radius:14px;border:1px solid rgba(255,255,255,.12);
+    background:rgba(255,255,255,.07);backdrop-filter:blur(16px) saturate(1.3);color:rgba(255,255,255,.9);display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:2px;font-size:8.5px;font-weight:500;opacity:.66;
+    transition:opacity .2s,transform .15s,background .2s;text-shadow:0 1px 4px rgba(0,0,0,.45);}
+  .rail button:active{opacity:1;transform:scale(.9);background:rgba(255,255,255,.16);}
+  .rail button svg{width:19px;height:19px;stroke-width:1.5;}
+  .rail .heart{background:rgba(255,255,255,.07);}
+  .rail .heart svg{width:22px;height:22px;fill:none;stroke:#fff;stroke-width:1.7;}
   .rail .heart.on{background:#fff;}
   .rail .heart.on svg{fill:var(--accent);stroke:var(--accent);}
   .rail .heart.pop{animation:pop .42s cubic-bezier(.2,1.4,.5,1);}
@@ -87,14 +88,18 @@
   .cap .size b{color:#fff;font-weight:700;}
   .cap .desc{font-size:13px;line-height:1.4;margin-top:8px;opacity:.9;max-width:90%;
     text-shadow:0 1px 10px rgba(0,0,0,.7);}
-  .cap .descwrap{margin-top:8px;font-size:13px;line-height:1.4;max-width:94%;text-shadow:0 1px 10px rgba(0,0,0,.7);}
-  .cap .desc2{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;opacity:.9;
-    -webkit-mask-image:linear-gradient(90deg,#000 78%,transparent);mask-image:linear-gradient(90deg,#000 78%,transparent);}
-  .cap .more{font-weight:600;font-size:13px;color:var(--accent-soft);padding:0;margin-top:2px;}
+  .cap .descwrap{margin-top:8px;font-size:13px;line-height:1.45;max-width:96%;text-shadow:0 1px 10px rgba(0,0,0,.75);}
+  .cap .desc2{max-height:1.45em;overflow:hidden;opacity:.92;transition:max-height .34s ease;
+    -webkit-mask-image:linear-gradient(180deg,#000 55%,transparent);mask-image:linear-gradient(180deg,#000 55%,transparent);}
+  .cap .descwrap.open .desc2{max-height:38vh;-webkit-mask-image:none;mask-image:none;}
+  .cap .occ{display:none;flex-wrap:wrap;gap:6px;margin-top:9px;}
+  .cap .descwrap.open .occ{display:flex;}
+  .cap .occ span{font-size:11px;font-weight:500;color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:5px 10px;background:rgba(0,0,0,.22);}
+  .cap .more{display:inline-block;font-weight:600;font-size:12.5px;color:rgba(255,255,255,.9);padding:0;margin-top:6px;text-decoration:underline;text-underline-offset:3px;}
   .cap .price{display:flex;align-items:baseline;gap:9px;margin-top:12px;}
   .cap .now{font-size:22px;font-weight:700;letter-spacing:-.01em;}
   .cap .old{font-size:13px;opacity:.55;text-decoration:line-through;}
-  .cap .off{font-size:10.5px;font-weight:700;color:#fff;background:var(--accent);padding:3px 7px;border-radius:7px;letter-spacing:.02em;}
+  .cap .off{font-size:10.5px;font-weight:700;color:#fff;background:rgba(255,255,255,.16);padding:3px 7px;border-radius:7px;letter-spacing:.02em;}
   .order{position:absolute;right:16px;bottom:calc(var(--safe-bot) + 22px);z-index:6;
     font-weight:700;font-size:15px;color:#fff;background:var(--go);padding:14px 22px;border-radius:14px;
     box-shadow:0 8px 24px -8px rgba(18,146,90,.85);transition:transform .15s,filter .15s;}
@@ -276,7 +281,7 @@ function build(){
       <div class="cap" data-cap>
         <div class="name">${b.name}</div>
         ${tags}
-        <div class="descwrap"><span class="desc2">${b.desc}</span> <button class="more" onclick="sheet(${i},'about')">подробнее</button></div>
+        <div class="descwrap"><div class="desc2">${b.desc}</div><div class="occ">${OCC.map(o=>`<span>${o}</span>`).join('')}</div><button class="more" onclick="toggleDesc(this)">подробнее</button></div>
         <div class="size" id="sz${i}"></div>
         <div class="price" id="pr${i}"></div>
         <div class="trust">${svg('<path d="M3 13V7a1 1 0 0 1 1-1h10v9M14 9h4l3 3v3h-2M5 17h9"/><circle cx="7.5" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/>','none','#7fe0ab')} Доставка по Москве за 2 часа · исполняет Roza4U</div>
@@ -370,6 +375,7 @@ function buyHTML(i){
     <button class="buycta" onclick="orderDone()">Оформить · ${rub(c.price)}</button>
     <p class="fine">Оплата после подтверждения флористом · заказ исполняет Roza4U</p>`;
 }
+function toggleDesc(btn){ const w=btn.closest('.descwrap'); const open=w.classList.toggle('open'); btn.textContent=open?'свернуть':'подробнее'; }
 function selDeliv(el){ el.parentNode.querySelectorAll('.delopt').forEach(b=>b.classList.remove('sel')); el.classList.add('sel'); }
 function orderDone(){
   const gift = sheetEl.querySelector('.delopt.sel')?.dataset.gift==='1';
