@@ -1,6 +1,6 @@
 {
-  "name": "МояРоза — лента подбора",
-  "short_name": "МояРоза",
+  "name": "Моя Роза — лента подбора",
+  "short_name": "Моя Роза",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
