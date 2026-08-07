@@ -246,7 +246,7 @@ function playVid(p){ const v=p.querySelector('video.fg')||p.querySelector('video
 function startProg(p){
   const bar=p.querySelector('.seg.run i');
   if(bar){ const dur=B[cur].photos[sub].type==='video'?8:5; p.querySelector('.prog').style.setProperty('--dur',dur+'s');
-    bar.addEventListener('animationend',()=>{ if(p===activePanel&&!transitioning) nextSub(); },{once:true}); }
+    bar.addEventListener('animationend',()=>{ if(p===activePanel&&!transitioning) autoAdvance(); },{once:true}); }
 }
 function wirePanel(p){
   const z=p.querySelector('.zones');
@@ -293,16 +293,22 @@ function transitionTo(k,dir){
   setTimeout(finish,640);
 }
 
-function bouquetJump(delta){ if(transitioning)return; const k=(cur+delta+B.length)%B.length; transitionTo(k, delta>0?'next':'prev'); }
-function nextSub(){ if(transitioning)return; if(sub<B[cur].photos.length-1) stepWithin(sub+1); else bouquetJump(1); }
-function prevSub(){ if(transitioning)return; if(sub>0) stepWithin(sub-1); else bouquetJump(-1); }
+const IDLE_MS=15000; let idleTimer=null; // авто-переход к след. букету только по долгому простою (фидбэк Макса №7)
+function clearIdle(){ if(idleTimer){clearTimeout(idleTimer);idleTimer=null;} }
+function bouquetJump(delta){ if(transitioning)return; clearIdle(); const k=(cur+delta+B.length)%B.length; transitionTo(k, delta>0?'next':'prev'); }
+/* ручной тап-край — переходит к соседнему букету; авто-прогресс — нет */
+function nextSub(){ if(transitioning)return; clearIdle(); if(sub<B[cur].photos.length-1) stepWithin(sub+1); else bouquetJump(1); }
+function prevSub(){ if(transitioning)return; clearIdle(); if(sub>0) stepWithin(sub-1); else bouquetJump(-1); }
+/* авто-прогресс: внутри букета листает фото; на последнем — НЕ прыгает, встаёт на паузу, авто-переход лишь после простоя */
+function autoAdvance(){ if(transitioning)return; if(sub<B[cur].photos.length-1) stepWithin(sub+1); else pauseAtEnd(); }
+function pauseAtEnd(){ clearIdle(); idleTimer=setTimeout(()=>{ if(!sheetOpen&&!transitioning) bouquetJump(1); }, IDLE_MS); }
 
 function pause(){ paused=true; stage.classList.add('paused'); const v=activePanel&&activePanel.querySelector('video'); if(v)v.pause(); }
 function resume(){ if(!paused)return; paused=false; stage.classList.remove('paused'); if(activePanel)playVid(activePanel); }
 
 /* жесты: тап-половины + свайпы + hold-пауза */
 let holdT=null, held=false, gx=0, gy=0, gMoved=false;
-function onDown(e){ gx=e.clientX; gy=e.clientY; gMoved=false; held=false; holdT=setTimeout(()=>{ if(!gMoved){ held=true; pause(); } },180); }
+function onDown(e){ clearIdle(); gx=e.clientX; gy=e.clientY; gMoved=false; held=false; holdT=setTimeout(()=>{ if(!gMoved){ held=true; pause(); } },180); }
 function onMove(e){ if(Math.abs(e.clientX-gx)>10||Math.abs(e.clientY-gy)>10){ gMoved=true; clearTimeout(holdT); } }
 function onUp(e){ clearTimeout(holdT); if(sheetOpen)return; if(held){ resume(); return; }
   const dx=e.clientX-gx, dy=e.clientY-gy;
