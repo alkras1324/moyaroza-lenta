@@ -209,9 +209,9 @@ const svg=(p,f='none',s='currentColor')=>`<svg viewBox="0 0 24 24" fill="${f}" s
 
 const photoEl=document.getElementById('photo'), progEl=document.getElementById('prog'), uiEl=document.getElementById('ui');
 const stage=document.getElementById('stage'), summaryEl=document.getElementById('summary');
-let cur=0, paused=false;
+let cur=0, sub=0, paused=false;
+const photosOf=()=>B[cur].photos;
 
-function mediaBest(b){ return b.photos.find(p=>p.type==='video')||b.photos[0]; }
 function mediaHTML(ph){
   const one=(cls)=> ph.type==='video'
     ? `<video class="${cls}" src="${ph.src}" muted loop playsinline autoplay preload="auto"></video>`
@@ -220,19 +220,21 @@ function mediaHTML(ph){
 }
 
 function buildProg(){
-  progEl.innerHTML=B.map((_,i)=>`<div class="seg ${i<cur?'done':''} ${i===cur?'run':''}"><i></i></div>`).join('');
+  const ph=photosOf();
+  progEl.innerHTML=ph.map((_,i)=>`<div class="seg ${i<sub?'done':''} ${i===sub?'run':''}"><i></i></div>`).join('');
   const runBar=progEl.querySelector('.seg.run i');
   if(runBar){
-    const dur = mediaBest(B[cur]).type==='video'?8:6;
+    const dur = ph[sub].type==='video'?8:5;
     progEl.style.setProperty('--dur',dur+'s');
-    runBar.addEventListener('animationend',()=>next(),{once:true});
+    runBar.addEventListener('animationend',()=>nextSub(),{once:true});
   }
 }
+
+function renderMedia(){ photoEl.innerHTML=mediaHTML(photosOf()[sub]); buildProg(); playVid(); }
 
 function render(){
   summaryEl.classList.remove('show');
   const b=B[cur];
-  photoEl.innerHTML=mediaHTML(mediaBest(b));
   const tags=(b.tags&&b.tags.length)?`<div class="tags">${b.tags.map(t=>`<span>${t}</span>`).join('<i></i>')}</div>`:'';
   const rail = b.sizes?`
     <div class="rail">
@@ -251,8 +253,7 @@ function render(){
     :`<div class="cap"><div class="name">${b.name}</div><div class="descwrap"><span class="desc2">${b.desc}</span></div></div>`;
   uiEl.innerHTML=rail+cap;
   if(b.sizes) price();
-  buildProg();
-  playVid();
+  renderMedia();
 }
 
 function price(){
@@ -263,9 +264,9 @@ function price(){
 }
 function playVid(){const v=photoEl.querySelector('video.fg')||photoEl.querySelector('video');if(v){v.muted=true;const p=v.play&&v.play();if(p&&p.catch)p.catch(()=>{});}}
 
-function goto(k){ if(k<0)k=0; if(k>=B.length){toSummary();return;} cur=k; paused=false; stage.classList.remove('paused'); render(); }
-function next(){ if(cur>=B.length-1){toSummary();} else goto(cur+1); }
-function prev(){ goto(Math.max(0,cur-1)); }
+function gotoB(k){ if(k<0)k=0; if(k>=B.length){toSummary();return;} cur=k; sub=0; paused=false; stage.classList.remove('paused'); render(); }
+function nextSub(){ if(sub<photosOf().length-1){ sub++; paused=false; stage.classList.remove('paused'); renderMedia(); } else gotoB(cur+1); }
+function prevSub(){ if(sub>0){ sub--; paused=false; stage.classList.remove('paused'); renderMedia(); } else gotoB(cur-1); }
 
 function pause(){ paused=true; stage.classList.add('paused'); const v=photoEl.querySelector('video'); if(v)v.pause(); }
 function resume(){ if(!paused)return; paused=false; stage.classList.remove('paused'); playVid(); }
@@ -273,7 +274,7 @@ function resume(){ if(!paused)return; paused=false; stage.classList.remove('paus
 /* tap zones + hold to pause */
 let holdT=null, held=false, sheetOpen=false;
 function down(){ held=false; holdT=setTimeout(()=>{held=true;pause();},180); }
-function up(side){ clearTimeout(holdT); if(sheetOpen)return; if(held){resume();return;} side==='l'?prev():next(); }
+function up(side){ clearTimeout(holdT); if(sheetOpen)return; if(held){resume();return;} side==='l'?prevSub():nextSub(); }
 document.getElementById('zl').addEventListener('pointerdown',down,{passive:true});
 document.getElementById('zr').addEventListener('pointerdown',down,{passive:true});
 document.getElementById('zl').addEventListener('pointerup',()=>up('l'),{passive:true});
@@ -326,7 +327,7 @@ function toSummary(){
   summaryEl.classList.add('show');
 }
 const plural=n=>(n%10==1&&n%100!=11)?'букет':((n%10>=2&&n%10<=4&&(n%100<10||n%100>=20))?'букета':'букетов');
-function restart(){ cur=0; render(); }
+function restart(){ cur=0; sub=0; render(); }
 
 /* visibility: pause when tab hidden */
 document.addEventListener('visibilitychange',()=>{document.hidden?pause():(!sheetOpen&&resume())});
