@@ -1,0 +1,44 @@
+name: Deploy to Yandex
+
+# Деплой в Yandex Object Storage (бакет mroza-site) + сброс кэша CDN.
+# Триггерится только при изменении файлов сайта. Правки *.md / README — НЕ деплоят.
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+      - 'LICENSE'
+  workflow_dispatch:   # ручной запуск кнопкой
+
+concurrency:
+  group: deploy-mroza-site
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync → Yandex Object Storage
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.YC_S3_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.YC_S3_SECRET }}
+        run: |
+          aws s3 sync . s3://mroza-site \
+            --endpoint-url=https://storage.yandexcloud.net \
+            --region ru-central1 \
+            --acl public-read --delete \
+            --exclude '.git/*' --exclude '.github/*'
+
+      - name: Purge CDN cache
+        run: |
+          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i "$HOME/yc" -n
+          YC="$HOME/yc/bin/yc"
+          printf '%s' '${{ secrets.YC_SA_KEY }}' > "$HOME/yc-key.json"
+          "$YC" config profile create ci >/dev/null 2>&1 || true
+          "$YC" config set service-account-key "$HOME/yc-key.json"
+          "$YC" cdn cache purge --resource-id bc8rwuj6llgioqbwgksb --path '/*'
+          "$YC" cdn cache purge --resource-id bc8rnboch3stxrskzyml --path '/*'
+          rm -f "$HOME/yc-key.json"
